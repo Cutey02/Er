@@ -40,7 +40,6 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     MessageEntity,
-    ParseMode,
     Update,
 )
 from telegram.error import BadRequest, TelegramError, Unauthorized
