@@ -16,7 +16,6 @@ from Exon import (
     DRAGONS,
     TIGERS,
     WOLVES,
-    dispatcher,
 )
 from Exon.modules.disable import DisableAbleCommandHandler
 from Exon.modules.helper_funcs.alternate import send_message
