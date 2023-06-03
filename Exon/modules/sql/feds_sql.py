@@ -1,11 +1,10 @@
 import ast
 import threading
-
-from sqlalchemy import BigInteger, Boolean, Column, Integer, String, UnicodeText
-from telegram.error import BadRequest, Forbidden
-
-from Exon import application
-from Exon.modules.sql import BASE, SESSION
+from EmikoRobot import dispatcher
+from EmikoRobot.modules.sql import BASE, SESSION
+from sqlalchemy import Boolean, Column, String, UnicodeText, Integer
+from telegram.error import BadRequest, Unauthorized
+from sqlalchemy.sql.sqltypes import BigInteger
 
 
 class Federations(BASE):
@@ -126,16 +125,14 @@ def get_fed_id(chat_id):
     get = FEDERATION_CHATS.get(str(chat_id))
     if get is None:
         return False
-    else:
-        return get["fid"]
+    return get["fid"]
 
 
 def get_fed_name(chat_id):
     get = FEDERATION_CHATS.get(str(chat_id))
     if get is None:
         return False
-    else:
-        return get["chat_name"]
+    return get["chat_name"]
 
 
 def get_user_fban(fed_id, user_id):
@@ -336,10 +333,7 @@ def search_user_in_fed(fed_id, user_id):
     if getfed is None:
         return False
     getfed = ast.literal_eval(getfed["fusers"])["members"]
-    if user_id in ast.literal_eval(getfed):
-        return True
-    else:
-        return False
+    return user_id in ast.literal_eval(getfed)
 
 
 def user_demote_fed(fed_id, user_id):
@@ -455,8 +449,7 @@ def all_fed_chats(fed_id):
         getfed = FEDERATION_CHATS_BYID.get(fed_id)
         if getfed is None:
             return []
-        else:
-            return getfed
+        return getfed
 
 
 def all_fed_users(fed_id):
@@ -577,6 +570,11 @@ def multi_fban_user(
 
             SESSION.add(r)
             counter += 1
+            if str(str(counter)[-2:]) == "00":
+                print(user_id)
+                print(first_name)
+                print(reason)
+                print(counter)
         try:
             SESSION.commit()
         except:
@@ -585,6 +583,7 @@ def multi_fban_user(
         finally:
             SESSION.commit()
         __load_all_feds_banned()
+        print("Done")
         return counter
 
 
@@ -619,8 +618,7 @@ def get_fban_user(fed_id, user_id):
                     reason = I.reason
                     time = I.time
         return True, reason, time
-    else:
-        return False, None, None
+    return False, None, None
 
 
 def get_all_fban_users(fed_id):
@@ -640,6 +638,7 @@ def get_all_fban_users_target(fed_id, user_id):
 
 
 def get_all_fban_users_global():
+    list_fbanned = FEDERATION_BANNED_USERID
     total = []
     for x in list(FEDERATION_BANNED_USERID):
         for y in FEDERATION_BANNED_USERID[x]:
@@ -648,6 +647,7 @@ def get_all_fban_users_global():
 
 
 def get_all_feds_users_global():
+    list_fed = FEDERATION_BYFEDID
     total = []
     for x in list(FEDERATION_BYFEDID):
         total.append(FEDERATION_BYFEDID[x])
@@ -658,8 +658,7 @@ def search_fed_by_id(fed_id):
     get = FEDERATION_BYFEDID.get(fed_id)
     if get is None:
         return False
-    else:
-        return get
+    return get
     result = False
     for Q in curr:
         if Q.fed_id == fed_id:
@@ -688,25 +687,24 @@ def set_feds_setting(user_id: int, setting: bool):
         SESSION.commit()
 
 
-async def get_fed_log(fed_id):
+def get_fed_log(fed_id):
     fed_setting = FEDERATION_BYFEDID.get(str(fed_id))
     if fed_setting is None:
         fed_setting = False
         return fed_setting
     if fed_setting.get("flog") is None:
         return False
-    elif fed_setting.get("flog"):
+    if fed_setting.get("flog"):
         try:
-            await application.bot.get_chat(fed_setting.get("flog"))
+            dispatcher.bot.get_chat(fed_setting.get("flog"))
         except BadRequest:
             set_fed_log(fed_id, None)
             return False
-        except Forbidden:
+        except Unauthorized:
             set_fed_log(fed_id, None)
             return False
         return fed_setting.get("flog")
-    else:
-        return False
+    return False
 
 
 def set_fed_log(fed_id, chat_id):
@@ -734,6 +732,7 @@ def set_fed_log(fed_id, chat_id):
         )
         SESSION.merge(fed)
         SESSION.commit()
+        print(fed_log)
         return True
 
 
@@ -784,8 +783,7 @@ def get_all_subs(fed_id):
 def get_spec_subs(fed_id, fed_target):
     if FEDS_SUBSCRIBER.get(fed_id, set()) == set():
         return {}
-    else:
-        return FEDS_SUBSCRIBER.get(fed_id, fed_target)
+    return FEDS_SUBSCRIBER.get(fed_id, fed_target)
 
 
 def get_mysubs(my_fed):
